@@ -4,30 +4,32 @@ Build a complete, production-ready Next.js 15 App Router application.
 
 PROJECT: raspberry-pi-project-finder
 HEADLINE: Discover Raspberry Pi projects matching your interests
-WHAT: None
-WHY: None
-WHO PAYS: None
+WHAT: A curated search engine that matches Raspberry Pi enthusiasts with projects based on their skill level, available components, and interests. Users input what they have or want to learn, and get filtered project recommendations with difficulty ratings and parts lists.
+WHY: Makers waste hours browsing scattered tutorials and forums to find projects that match their skill and available parts. Most give up or start projects they can't finish, leading to drawer full of unused Pi boards and frustration.
+WHO PAYS: Hobbyist makers and electronics enthusiasts who own Raspberry Pi boards but struggle to find appropriate next projects. Typically software developers, students, or retirees looking for hands-on learning without the research overhead.
 NICHE: maker-tools
 PRICE: $$7/mo
 
 ARCHITECTURE SPEC:
-A Next.js web app that curates and recommends Raspberry Pi projects based on user preferences like skill level, components, and interests. Users can filter projects, save favorites, and access premium project collections with detailed tutorials and component lists.
+A Next.js web app with a curated project database, smart filtering system, and subscription-gated premium features. Users search/filter projects by skill level, components, and interests, with Lemon Squeezy handling $7/mo subscriptions for advanced filters and personalized recommendations.
 
 PLANNED FILES:
 - app/page.tsx
-- app/projects/page.tsx
-- app/projects/[id]/page.tsx
-- app/dashboard/page.tsx
+- app/search/page.tsx
+- app/project/[id]/page.tsx
 - app/api/projects/route.ts
 - app/api/webhooks/lemonsqueezy/route.ts
+- app/api/auth/[...nextauth]/route.ts
 - components/ProjectCard.tsx
-- components/ProjectFilter.tsx
-- components/PricingCard.tsx
+- components/FilterPanel.tsx
+- components/SubscriptionButton.tsx
 - lib/database.ts
 - lib/lemonsqueezy.ts
-- prisma/schema.prisma
+- lib/auth.ts
+- data/projects.json
+- types/project.ts
 
-DEPENDENCIES: next, react, tailwindcss, prisma, @prisma/client, @lemonsqueezy/lemonsqueezy.js, lucide-react, next-auth, @next-auth/prisma-adapter, zod
+DEPENDENCIES: next, react, typescript, tailwindcss, next-auth, @lemonsqueezy/lemonsqueezy.js, prisma, @prisma/client, lucide-react, fuse.js, zod
 
 REQUIREMENTS:
 - Next.js 15 with App Router (app/ directory)
@@ -35,17 +37,33 @@ REQUIREMENTS:
 - Tailwind CSS v4
 - shadcn/ui components (npx shadcn@latest init, then add needed components)
 - Dark theme ONLY — background #0d1117, no light mode
-- Lemon Squeezy checkout overlay for payments
+- Stripe Payment Link for payments (hosted checkout — use the URL directly as the Buy button href)
 - Landing page that converts: hero, problem, solution, pricing, FAQ
 - The actual tool/feature behind a paywall (cookie-based access after purchase)
 - Mobile responsive
 - SEO meta tags, Open Graph tags
 - /api/health endpoint that returns {"status":"ok"}
+- NO HEAVY ORMs: Do NOT use Prisma, Drizzle, TypeORM, Sequelize, or Mongoose. If the tool needs persistence, use direct SQL via `pg` (Postgres) or `better-sqlite3` (local), or just filesystem JSON. Reason: these ORMs require schema files and codegen steps that fail on Vercel when misconfigured.
+- INTERNAL FILE DISCIPLINE: Every internal import (paths starting with `@/`, `./`, or `../`) MUST refer to a file you actually create in this build. If you write `import { Card } from "@/components/ui/card"`, then `components/ui/card.tsx` MUST exist with a real `export const Card` (or `export default Card`). Before finishing, scan all internal imports and verify every target file exists. Do NOT use shadcn/ui patterns unless you create every component from scratch — easier path: write all UI inline in the page that uses it.
+- DEPENDENCY DISCIPLINE: Every package imported in any .ts, .tsx, .js, or .jsx file MUST be
+  listed in package.json dependencies (or devDependencies for build-only). Before finishing,
+  scan all source files for `import` statements and verify every external package (anything
+  not starting with `.` or `@/`) appears in package.json. Common shadcn/ui peers that MUST
+  be added if used:
+  - lucide-react, clsx, tailwind-merge, class-variance-authority
+  - react-hook-form, zod, @hookform/resolvers
+  - @radix-ui/* (for any shadcn component)
+- After running `npm run build`, if you see "Module not found: Can't resolve 'X'", add 'X'
+  to package.json dependencies and re-run npm install + npm run build until it passes.
 
 ENVIRONMENT VARIABLES (create .env.example):
-- NEXT_PUBLIC_LEMON_SQUEEZY_STORE_ID
-- NEXT_PUBLIC_LEMON_SQUEEZY_PRODUCT_ID
-- LEMON_SQUEEZY_WEBHOOK_SECRET
+- NEXT_PUBLIC_STRIPE_PAYMENT_LINK  (full URL, e.g. https://buy.stripe.com/test_XXX)
+- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  (pk_test_... or pk_live_...)
+- STRIPE_WEBHOOK_SECRET  (set when webhook is wired)
+
+BUY BUTTON RULE: the Buy button's href MUST be `process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK`
+used as-is — do NOT construct URLs from a product ID, do NOT prepend any base URL,
+do NOT wrap it in an embed iframe. The link opens Stripe's hosted checkout directly.
 
 After creating all files:
 1. Run: npm install
@@ -55,26 +73,3 @@ After creating all files:
 
 Do NOT use placeholder text. Write real, helpful content for the landing page
 and the tool itself. The tool should actually work and provide value.
-
-
-PREVIOUS ATTEMPT FAILED WITH:
-Codex exited 1: Reading additional input from stdin...
-OpenAI Codex v0.121.0 (research preview)
---------
-workdir: /tmp/openclaw-builds/raspberry-pi-project-finder
-model: gpt-5.3-codex
-provider: openai
-approval: never
-sandbox: danger-full-access
-reasoning effort: none
-reasoning summaries: none
-session id: 019d9501-2bcd-78c3-9b58-6f4190acf9bc
---------
-user
-# Build Task: raspberry-pi-project-finder
-
-Build a complete, production-ready Next.js 15 App Router application.
-
-PROJECT: raspberry-pi-project-finder
-HEADLINE
-Please fix the above errors and regenerate.
